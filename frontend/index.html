@@ -1,0 +1,1082 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Teacher Live View</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .header {
+      margin-bottom: 30px;
+    }
+
+    .header h1 { 
+      font-size: 2em;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .control-group label {
+      font-weight: bold;
+      color: #555;
+    }
+
+    select, button {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    #grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+      gap: 15px;
+    }
+
+    .screen-card { 
+      border: 1px solid #ddd; 
+      padding: 12px; 
+      border-radius: 8px; 
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .screen-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transform: translateY(-2px);
+    }
+
+    .screen-card h3 {
+      margin: 0 0 8px 0;
+      color: #333;
+      font-size: 16px;
+    }
+
+    .screen-card p {
+      margin: 4px 0;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .screen-image-container {
+      width: 100%;
+      height: 250px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      margin: 8px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .screen-image-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .slider-container {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .slider-container input[type="range"] {
+      flex: 1;
+      height: 6px;
+      cursor: pointer;
+    }
+
+    .slider-info {
+      font-size: 11px;
+      color: #666;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    .controls-bottom {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .btn-small {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .source-indicator {
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 768px) {
+      #grid {
+        grid-template-columns: 1fr;
+      }
+      .controls {
+        flex-direction: column;
+      }
+      .control-group {
+        width: 100%;
+      }
+    }
+
+    /* ============================================
+       DETAIL VIEW MODAL
+       ============================================ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 90%;
+      height: 90%;
+      max-width: 1200px;
+      max-height: 800px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid #ddd;
+      background: #f9f9f9;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 24px;
+      color: #333;
+    }
+
+    .modal-student-info {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex: 1;
+      margin: 0 15px;
+    }
+
+    .modal-student-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    .modal-student-details h3 {
+      margin: 0 0 5px 0;
+      color: #333;
+    }
+
+    .modal-student-details p {
+      margin: 0;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .modal-close-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .modal-close-btn:hover {
+      background: #c82333;
+    }
+
+    .modal-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: auto;
+      padding: 20px;
+    }
+
+    .modal-screen-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .modal-screen-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .modal-controls {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+
+    .modal-slider-group {
+      flex: 1;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-width: 200px;
+    }
+
+    .modal-slider-group input[type="range"] {
+      flex: 1;
+      height: 6px;
+      cursor: pointer;
+    }
+
+    .modal-slider-info {
+      font-size: 12px;
+      color: #666;
+      min-width: 70px;
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .modal-btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .modal-btn:hover {
+      background: #0056b3;
+      transform: translateY(-2px);
+    }
+
+    .modal-btn.secondary {
+      background: #6c757d;
+    }
+
+    .modal-btn.secondary:hover {
+      background: #5a6268;
+    }
+
+    .modal-btn.success {
+      background: #28a745;
+    }
+
+    .modal-btn.success:hover {
+      background: #218838;
+    }
+
+    .modal-source-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #e7f3ff;
+      color: #0066cc;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: auto;
+    }
+
+    .modal-nav-arrows {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-nav-btn {
+      padding: 8px 12px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .modal-nav-btn:hover {
+      background: #5a6268;
+    }
+
+    .modal-nav-btn:disabled {
+      background: #d3d3d3;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+      .modal-content {
+        width: 95%;
+        height: 95%;
+      }
+
+      .modal-header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .modal-header h2 {
+        font-size: 18px;
+      }
+
+      .modal-student-info {
+        justify-content: center;
+        margin: 10px 0 0 0;
+      }
+
+      .modal-close-btn {
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .modal-controls {
+        flex-direction: column;
+      }
+
+      .modal-slider-group {
+        width: 100%;
+      }
+
+      .modal-buttons {
+        justify-content: center;
+      }
+
+      .modal-source-badge {
+        margin-left: 0;
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📺 Teacher Live Screens</h1>
+    <div id="status" class="status disconnected">Status: Initializing...</div>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label for="dataSource">Data Source:</label>
+      <select id="dataSource">
+        <option value="auto">Auto (Live + Local)</option>
+        <option value="live">Live Only (WebSocket)</option>
+        <option value="storage">Storage Only (Saved Screenshots)</option>
+      </select>
+    </div>
+
+    <button onclick="app.refreshAll()">🔄 Refresh</button>
+    <button onclick="app.autoPlayToggle()" id="autoPlayBtn">▶️ Auto Play</button>
+  </div>
+
+  <div id="grid"></div>
+
+  <!-- DETAIL VIEW MODAL -->
+  <div id="detailModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h2 id="detailStudentName">Student Name</h2>
+        </div>
+        <div class="modal-student-info">
+          <div class="modal-student-avatar" id="detailAvatar">A</div>
+          <div class="modal-student-details">
+            <h3 id="detailStudentId">ID: student_01</h3>
+            <p id="detailStatus"></p>
+          </div>
+          <div class="modal-source-badge" id="detailSource">Live</div>
+        </div>
+        <button class="modal-close-btn" onclick="app.closeDetailView()">✕ Close</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-screen-container" id="detailScreenContainer">
+          <div class="loader"></div>
+        </div>
+
+        <div class="modal-controls">
+          <div class="modal-nav-arrows">
+            <button class="modal-nav-btn" onclick="app.previousScreenshot()" id="prevBtn">← Previous</button>
+            <button class="modal-nav-btn" onclick="app.nextScreenshot()" id="nextBtn">Next →</button>
+          </div>
+
+          <div class="modal-slider-group">
+            <input type="range" id="detailSlider" min="0" max="100" value="0" 
+              onchange="app.changeDetailScreenshot(this.value)">
+            <span class="modal-slider-info" id="detailSliderInfo">1/1</span>
+          </div>
+
+          <div class="modal-buttons">
+            <button class="modal-btn success" onclick="app.toggleDetailAutoPlay()" id="detailAutoPlayBtn">
+              ▶️ Auto Play
+            </button>
+            <button class="modal-btn" onclick="app.downloadScreenshot()">
+              ⬇️ Download
+            </button>
+            <button class="modal-btn secondary" onclick="app.zoomScreenshot()">
+              🔍 Zoom
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // SCREEN MANAGER
+    // ============================================
+    class ScreenManager {
+      constructor() {
+        this.students = new Map();
+        this.ws = null;
+        this.wsConnected = false;
+        this.dataSource = 'auto';
+        this.autoPlayEnabled = false;
+        this.autoPlayIntervals = new Map();
+      }
+
+      async init() {
+        await this.loadStorageStudents();
+        this.initWebSocket();
+        this.updateStatus();
+      }
+
+      // Load students from storage
+      async loadStorageStudents() {
+        try {
+          const response = await fetch('/api/screenshots/list');
+          const data = await response.json();
+          
+          if (data.students) {
+            for (const [studentId, screenshots] of Object.entries(data.students)) {
+              if (!this.students.has(studentId)) {
+                this.students.set(studentId, {
+                  id: studentId,
+                  name: this.formatStudentName(studentId),
+                  screenshots: screenshots,
+                  currentScreenIndex: screenshots.length - 1,
+                  liveImage: null,
+                  source: 'storage'
+                });
+              } else {
+                const student = this.students.get(studentId);
+                student.screenshots = screenshots;
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load storage students:', error);
+        }
+      }
+
+      // Initialize WebSocket for live updates
+      initWebSocket() {
+        try {
+          this.ws = new WebSocket('ws://127.0.0.1:8000/ws/teacher');
+          
+          this.ws.onopen = () => {
+            console.log('✅ WebSocket connected');
+            this.wsConnected = true;
+            this.updateStatus();
+          };
+
+          this.ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const studentId = data.student_id;
+
+            if (!this.students.has(studentId)) {
+              this.students.set(studentId, {
+                id: studentId,
+                name: this.formatStudentName(studentId),
+                screenshots: [],
+                currentScreenIndex: 0,
+                liveImage: null,
+                source: 'live'
+              });
+            }
+
+            const student = this.students.get(studentId);
+            student.liveImage = data.image;
+            student.source = 'live';
+            this.renderStudent(studentId);
+          };
+
+          this.ws.onclose = () => {
+            console.log('❌ WebSocket disconnected');
+            this.wsConnected = false;
+            this.updateStatus();
+          };
+
+          this.ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+          };
+        } catch (error) {
+          console.error('Failed to initialize WebSocket:', error);
+        }
+      }
+
+      formatStudentName(studentId) {
+        return studentId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      }
+
+      getDisplayStudents() {
+        const source = this.dataSource;
+        let students = Array.from(this.students.values());
+
+        if (source === 'live') {
+          students = students.filter(s => s.source === 'live' && s.liveImage);
+        } else if (source === 'storage') {
+          students = students.filter(s => s.screenshots.length > 0);
+        }
+        // 'auto' shows all
+
+        return students;
+      }
+
+      toggleAutoPlay(studentId) {
+        if (this.autoPlayIntervals.has(studentId)) {
+          clearInterval(this.autoPlayIntervals.get(studentId));
+          this.autoPlayIntervals.delete(studentId);
+        } else {
+          const interval = setInterval(() => {
+            const student = this.students.get(studentId);
+            if (student && student.screenshots.length > 0) {
+              student.currentScreenIndex = (student.currentScreenIndex + 1) % student.screenshots.length;
+              this.renderStudent(studentId);
+            }
+          }, 500); // Change screenshot every 500ms
+          this.autoPlayIntervals.set(studentId, interval);
+        }
+      }
+
+      changeScreenshot(studentId, index) {
+        const student = this.students.get(studentId);
+        if (student && student.screenshots) {
+          student.currentScreenIndex = Math.max(0, Math.min(index, student.screenshots.length - 1));
+          this.renderStudent(studentId);
+        }
+      }
+
+      renderStudent(studentId) {
+        const student = this.students.get(studentId);
+        let grid = document.getElementById('grid');
+        let card = document.getElementById(`student-${studentId}`);
+
+        if (!card) {
+          card = document.createElement('div');
+          card.className = 'screen-card';
+          card.id = `student-${studentId}`;
+          grid.appendChild(card);
+        }
+
+        const currentTime = new Date().toLocaleTimeString();
+        let imageHtml = '<div class="loader"></div>';
+        let sliderHtml = '';
+        let source = 'N/A';
+
+        if (student.source === 'live' && student.liveImage) {
+          imageHtml = `<img src="data:image/jpeg;base64,${student.liveImage}" alt="${student.name}">`;
+          source = '🔴 Live';
+        } else if (student.screenshots && student.screenshots.length > 0) {
+          const screenshotPath = student.screenshots[student.currentScreenIndex];
+          imageHtml = `<img src="/storage/screenshots/${student.id}/${screenshotPath}" alt="${student.name}">`;
+          source = `📁 Storage (${student.currentScreenIndex + 1}/${student.screenshots.length})`;
+          
+          sliderHtml = `
+            <div class="slider-container">
+              <input type="range" min="0" max="${student.screenshots.length - 1}" 
+                value="${student.currentScreenIndex}"
+                onchange="app.changeScreenshot('${studentId}', this.value)">
+              <span class="slider-info">${student.currentScreenIndex + 1}/${student.screenshots.length}</span>
+            </div>
+          `;
+        }
+
+        const autoPlayActive = this.autoPlayIntervals.has(studentId);
+
+        card.innerHTML = `
+          <div class="screen-image-container" style="cursor: pointer; margin-bottom: 8px;" onclick="app.openDetailView('${studentId}')">
+            ${imageHtml}
+          </div>
+          <h3 style="cursor: pointer;" onclick="app.openDetailView('${studentId}')">${student.name}</h3>
+          <p style="color: #999;">ID: ${student.id}</p>
+          ${sliderHtml}
+          <div class="controls-bottom">
+            <button class="btn-small" onclick="app.autoPlayToggleStudent('${studentId}')" 
+              style="background: ${autoPlayActive ? '#28a745' : '#6c757d'}">
+              ${autoPlayActive ? '⏸️' : '▶️'}
+            </button>
+            <button class="btn-small" onclick="app.loadScreenshot('${studentId}')">🔄</button>
+          </div>
+          <div class="source-indicator">Source: ${source} | Update: ${currentTime}</div>
+        `;
+      }
+
+      async loadScreenshot(studentId) {
+        await this.loadStorageStudents();
+        this.renderStudent(studentId);
+      }
+
+      updateStatus() {
+        const status = document.getElementById('status');
+        if (this.students.size > 0) {
+          const liveCount = Array.from(this.students.values()).filter(s => s.liveImage).length;
+          const storageCount = Array.from(this.students.values()).filter(s => s.screenshots.length > 0).length;
+          
+          if (this.wsConnected || storageCount > 0) {
+            status.className = 'status connected';
+            status.textContent = `✅ Status: Ready | ${liveCount} Live | ${storageCount} Stored | Total: ${this.students.size} Students`;
+          } else {
+            status.className = 'status disconnected';
+            status.textContent = '⏳ Status: Waiting for data...';
+          }
+        }
+      }
+
+      renderAll() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        const displayStudents = this.getDisplayStudents();
+        
+        if (displayStudents.length === 0) {
+          grid.innerHTML = '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: #999;">No students found</div>';
+          return;
+        }
+
+        displayStudents.forEach(student => {
+          this.renderStudent(student.id);
+        });
+      }
+
+      setDataSource(source) {
+        this.dataSource = source;
+        this.renderAll();
+      }
+
+      refreshAll() {
+        this.loadStorageStudents().then(() => this.renderAll());
+      }
+
+      autoPlayToggle() {
+        this.autoPlayEnabled = !this.autoPlayEnabled;
+        const btn = document.getElementById('autoPlayBtn');
+        btn.textContent = this.autoPlayEnabled ? '⏸️ Stop All' : '▶️ Auto Play';
+        
+        if (this.autoPlayEnabled) {
+          this.getDisplayStudents().forEach(student => {
+            if (!this.autoPlayIntervals.has(student.id)) {
+              this.toggleAutoPlay(student.id);
+            }
+          });
+        } else {
+          this.autoPlayIntervals.forEach((interval, studentId) => {
+            clearInterval(interval);
+          });
+          this.autoPlayIntervals.clear();
+          this.renderAll();
+        }
+      }
+
+      autoPlayToggleStudent(studentId) {
+        this.toggleAutoPlay(studentId);
+        this.renderStudent(studentId);
+      }
+    }
+
+    // ============================================
+    // APPLICATION
+    // ============================================
+    const app = {
+      manager: new ScreenManager(),
+
+      async init() {
+        await this.manager.init();
+        this.manager.renderAll();
+        this.setupEventListeners();
+        
+        // Refresh every 5 seconds
+        setInterval(() => this.manager.renderAll(), 5000);
+      },
+
+      setupEventListeners() {
+        document.getElementById('dataSource').addEventListener('change', (e) => {
+          this.manager.setDataSource(e.target.value);
+        });
+
+        // Close detail modal when clicking outside
+        document.getElementById('detailModal').addEventListener('click', (e) => {
+          if (e.target.id === 'detailModal') {
+            this.closeDetailView();
+          }
+        });
+
+        // Close detail modal with Escape key
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && document.getElementById('detailModal').classList.contains('active')) {
+            this.closeDetailView();
+          }
+        });
+      },
+
+      changeScreenshot(studentId, index) {
+        this.manager.changeScreenshot(studentId, parseInt(index));
+      },
+
+      loadScreenshot(studentId) {
+        this.manager.loadScreenshot(studentId);
+      },
+
+      refreshAll() {
+        this.manager.refreshAll();
+      },
+
+      autoPlayToggle() {
+        this.manager.autoPlayToggle();
+      },
+
+      autoPlayToggleStudent(studentId) {
+        this.manager.autoPlayToggleStudent(studentId);
+      },
+
+      // ============================================
+      // DETAIL VIEW FUNCTIONS
+      // ============================================
+      currentDetailStudentId: null,
+      detailAutoPlayEnabled: false,
+      detailAutoPlayInterval: null,
+      detailUpdateInterval: null,
+      detailViewSourceMode: 'live', // 'live' or 'storage'
+
+      openDetailView(studentId) {
+        this.currentDetailStudentId = studentId;
+        const student = this.manager.students.get(studentId);
+        
+        if (!student) return;
+
+        // Update header
+        document.getElementById('detailStudentName').textContent = student.name;
+        document.getElementById('detailStudentId').textContent = `ID: ${student.id}`;
+        document.getElementById('detailAvatar').textContent = student.name.charAt(0).toUpperCase();
+        
+        // Determine source mode - prefer live if available
+        this.detailViewSourceMode = (student.source === 'live' && student.liveImage) ? 'live' : 'storage';
+        
+        // Update source badge
+        const source = this.detailViewSourceMode === 'live' ? '🔴 Live Stream' : '📁 Storage';
+        document.getElementById('detailSource').textContent = source;
+        
+        // Update status
+        const totalScreens = student.screenshots ? student.screenshots.length : 1;
+        document.getElementById('detailStatus').textContent = 
+          `${totalScreens} screenshot${totalScreens > 1 ? 's' : ''} available`;
+
+        // Show the modal
+        document.getElementById('detailModal').classList.add('active');
+
+        // Load initial screenshot
+        this.updateDetailView();
+
+        // Start updating detail view every 1 second (for live stream)
+        if (this.detailUpdateInterval) {
+          clearInterval(this.detailUpdateInterval);
+        }
+        this.detailUpdateInterval = setInterval(() => {
+          if (this.currentDetailStudentId && document.getElementById('detailModal').classList.contains('active')) {
+            this.updateDetailView();
+          }
+        }, 1000);
+      },
+
+      closeDetailView() {
+        document.getElementById('detailModal').classList.remove('active');
+        this.currentDetailStudentId = null;
+        
+        if (this.detailAutoPlayInterval) {
+          clearInterval(this.detailAutoPlayInterval);
+          this.detailAutoPlayInterval = null;
+          this.detailAutoPlayEnabled = false;
+        }
+        
+        if (this.detailUpdateInterval) {
+          clearInterval(this.detailUpdateInterval);
+          this.detailUpdateInterval = null;
+        }
+      },
+
+      updateDetailView() {
+        const student = this.manager.students.get(this.currentDetailStudentId);
+        if (!student) return;
+
+        let imageHtml = '<div class="loader"></div>';
+        let totalScreens = 0;
+        let currentIndex = 0;
+        let displaySource = 'Storage';
+
+        // Prefer live stream if available
+        if (student.source === 'live' && student.liveImage) {
+          imageHtml = `<img src="data:image/jpeg;base64,${student.liveImage}" alt="${student.name}">`;
+          totalScreens = 1;
+          currentIndex = 0;
+          displaySource = '🔴 Live Stream';
+          this.detailViewSourceMode = 'live';
+          
+          // Hide slider and nav buttons for live stream
+          document.querySelector('.modal-slider-group').style.display = 'none';
+          document.querySelector('.modal-nav-arrows').style.display = 'none';
+        } else if (student.screenshots && student.screenshots.length > 0) {
+          const screenshotPath = student.screenshots[student.currentScreenIndex];
+          imageHtml = `<img src="/storage/screenshots/${student.id}/${screenshotPath}" alt="${student.name}">`;
+          totalScreens = student.screenshots.length;
+          currentIndex = student.currentScreenIndex;
+          displaySource = `📁 Storage (${currentIndex + 1}/${totalScreens})`;
+          this.detailViewSourceMode = 'storage';
+          
+          // Show slider and nav buttons for storage
+          document.querySelector('.modal-slider-group').style.display = 'flex';
+          document.querySelector('.modal-nav-arrows').style.display = 'flex';
+          
+          // Update slider and buttons
+          document.getElementById('detailSlider').max = totalScreens - 1;
+          document.getElementById('detailSlider').value = currentIndex;
+          document.getElementById('detailSliderInfo').textContent = `${currentIndex + 1}/${totalScreens}`;
+          
+          // Update navigation button states
+          document.getElementById('prevBtn').disabled = currentIndex === 0;
+          document.getElementById('nextBtn').disabled = currentIndex === totalScreens - 1;
+        }
+
+        document.getElementById('detailScreenContainer').innerHTML = imageHtml;
+        document.getElementById('detailSource').textContent = displaySource;
+      },
+
+      changeDetailScreenshot(index) {
+        const student = this.manager.students.get(this.currentDetailStudentId);
+        if (student && student.screenshots) {
+          student.currentScreenIndex = Math.max(0, Math.min(parseInt(index), student.screenshots.length - 1));
+          this.updateDetailView();
+        }
+      },
+
+      previousScreenshot() {
+        const student = this.manager.students.get(this.currentDetailStudentId);
+        if (!student) return;
+        
+        const max = student.screenshots ? student.screenshots.length - 1 : 0;
+        if (student.currentScreenIndex > 0) {
+          student.currentScreenIndex--;
+          this.updateDetailView();
+        }
+      },
+
+      nextScreenshot() {
+        const student = this.manager.students.get(this.currentDetailStudentId);
+        if (!student) return;
+        
+        const max = student.screenshots ? student.screenshots.length - 1 : 0;
+        if (student.currentScreenIndex < max) {
+          student.currentScreenIndex++;
+          this.updateDetailView();
+        }
+      },
+
+      toggleDetailAutoPlay() {
+        const student = this.manager.students.get(this.currentDetailStudentId);
+        if (!student || !student.screenshots || student.screenshots.length === 0) return;
+
+        this.detailAutoPlayEnabled = !this.detailAutoPlayEnabled;
+        const btn = document.getElementById('detailAutoPlayBtn');
+
+        if (this.detailAutoPlayEnabled) {
+          btn.textContent = '⏸️ Stop';
+          btn.style.background = '#28a745';
+          
+          this.detailAutoPlayInterval = setInterval(() => {
+            if (student.currentScreenIndex < student.screenshots.length - 1) {
+              student.currentScreenIndex++;
+            } else {
+              student.currentScreenIndex = 0; // Loop
+            }
+            this.updateDetailView();
+          }, 500);
+        } else {
+          btn.textContent = '▶️ Auto Play';
+          btn.style.background = '#007bff';
+          if (this.detailAutoPlayInterval) {
+            clearInterval(this.detailAutoPlayInterval);
+            this.detailAutoPlayInterval = null;
+          }
+        }
+      },
+
+      downloadScreenshot() {
+        const student = this.manager.students.get(this.currentDetailStudentId);
+        if (!student) return;
+
+        if (student.source === 'live' && student.liveImage) {
+          // Download from base64
+          const link = document.createElement('a');
+          link.href = `data:image/jpeg;base64,${student.liveImage}`;
+          link.download = `${student.id}_${new Date().toISOString()}.jpg`;
+          link.click();
+        } else if (student.screenshots && student.screenshots.length > 0) {
+          // Download from storage
+          const filename = student.screenshots[student.currentScreenIndex];
+          const link = document.createElement('a');
+          link.href = `/storage/screenshots/${student.id}/${filename}`;
+          link.download = filename;
+          link.click();
+        }
+      },
+
+      zoomScreenshot() {
+        const container = document.getElementById('detailScreenContainer');
+        const img = container.querySelector('img');
+        
+        if (!img) return;
+
+        // Toggle between contain and cover
+        if (img.style.objectFit === 'cover') {
+          img.style.objectFit = 'contain';
+        } else {
+          img.style.objectFit = 'cover';
+        }
+      }
+    };
+
+    app.init();
+  </script>
+</body>
+</html>
