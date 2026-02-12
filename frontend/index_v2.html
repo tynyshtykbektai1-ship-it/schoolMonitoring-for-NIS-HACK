@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proctor Pulse</title>
+  <style>
+    :root {
+      --bg: #0a1419;
+      --bg-soft: #102028;
+      --panel: rgba(11, 24, 31, 0.86);
+      --panel-2: rgba(15, 33, 42, 0.92);
+      --line: rgba(148, 173, 188, 0.24);
+      --text: #e8f3f7;
+      --muted: #9cb1bc;
+      --teal: #00b3a4;
+      --amber: #f59e0b;
+      --rose: #ef4444;
+      --lime: #10b981;
+      --shadow: 0 14px 48px rgba(0, 0, 0, 0.34);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1100px 520px at 5% -10%, rgba(0, 179, 164, 0.2), transparent 60%),
+        radial-gradient(920px 520px at 95% 0%, rgba(245, 158, 11, 0.16), transparent 65%),
+        linear-gradient(160deg, #081116 0%, #0c1c23 45%, #10252e 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1450px;
+      margin: 0 auto;
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .glass {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(7px);
+    }
+
+    .hero {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .hero-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: grid;
+      gap: 2px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.52rem;
+      letter-spacing: 0.4px;
+      font-weight: 700;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(12, 30, 40, 0.86);
+      color: var(--muted);
+      padding: 7px 12px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .pill.on {
+      color: #c8fff8;
+      border-color: rgba(16, 185, 129, 0.45);
+      background: rgba(16, 185, 129, 0.12);
+    }
+
+    .pill.off {
+      color: #ffd8d8;
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.13);
+    }
+
+    select, button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--text);
+      background: rgba(19, 39, 49, 0.92);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: rgba(0, 179, 164, 0.6);
+      background: linear-gradient(135deg, #0aa89b 0%, #0c968d 100%);
+    }
+
+    button.primary:hover { filter: brightness(1.08); }
+
+    .kpis {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: linear-gradient(165deg, rgba(20, 44, 55, 0.72), rgba(13, 30, 39, 0.86));
+      padding: 10px;
+      transform: translateY(8px);
+      opacity: 0;
+      animation: rise 0.45s ease forwards;
+    }
+
+    .kpi:nth-child(2) { animation-delay: 0.08s; }
+    .kpi:nth-child(3) { animation-delay: 0.16s; }
+    .kpi:nth-child(4) { animation-delay: 0.24s; }
+
+    .kpi .label { color: var(--muted); font-size: 0.8rem; }
+    .kpi .value { margin-top: 6px; font-size: 1.36rem; font-weight: 800; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+    }
+
+    .panel {
+      padding: 14px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      letter-spacing: 0.2px;
+    }
+
+    .students {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+
+    .student {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--panel-2);
+      padding: 10px;
+      display: grid;
+      gap: 7px;
+      cursor: pointer;
+      transition: transform 0.22s ease, border-color 0.22s ease;
+    }
+
+    .student:hover {
+      transform: translateY(-3px);
+      border-color: rgba(0, 179, 164, 0.52);
+    }
+
+    .student.sel {
+      border-color: rgba(0, 179, 164, 0.7);
+      box-shadow: 0 0 0 2px rgba(0, 179, 164, 0.24);
+    }
+
+    .frame {
+      height: 182px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: #0f2027;
+    }
+
+    .frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 3px 9px;
+      border: 1px solid var(--line);
+      font-size: 0.72rem;
+      font-weight: 700;
+      width: max-content;
+    }
+
+    .badge.live {
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #bcffe8;
+      background: rgba(16, 185, 129, 0.13);
+    }
+
+    .badge.storage {
+      border-color: rgba(245, 158, 11, 0.55);
+      color: #ffe5bc;
+      background: rgba(245, 158, 11, 0.15);
+    }
+
+    .stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .hint {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      color: var(--muted);
+      background: rgba(17, 38, 49, 0.58);
+      font-size: 0.9rem;
+    }
+
+    .vlist, .leader {
+      display: grid;
+      gap: 8px;
+      max-height: 350px;
+      overflow: auto;
+    }
+
+    .vitem {
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--amber);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: rgba(16, 36, 47, 0.86);
+    }
+
+    .vitem.phone_detected, .vitem.multiple_faces { border-left-color: var(--rose); }
+    .vitem.face_not_found { border-left-color: #fb923c; }
+
+    .leader-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(16, 36, 47, 0.86);
+      font-size: 0.9rem;
+    }
+
+    .risk {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .risk.low { background: #0284c7; }
+    .risk.medium { background: var(--amber); }
+    .risk.high { background: #ea580c; }
+    .risk.critical { background: #b91c1c; }
+
+    .timeline {
+      max-height: 230px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(16, 36, 47, 0.86);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .bar {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(156, 177, 188, 0.2);
+      overflow: hidden;
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #0ea5e9 0%, #22c55e 55%, #f59e0b 100%);
+    }
+
+    .controls-inline {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    @media (max-width: 1060px) {
+      .two-col { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 640px) {
+      .shell { padding: 12px; }
+      .hero-head { align-items: flex-start; }
+      .kpis { grid-template-columns: 1fr; }
+      .frame { height: 170px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="glass hero">
+      <div class="hero-head">
+        <div class="brand">
+          <h1>Proctor Pulse Dashboard</h1>
+          <p>Live invigilation control center with behavioral risk analytics.</p>
+        </div>
+        <div class="row">
+          <div id="wsStatus" class="pill off">WS DISCONNECTED</div>
+          <label for="sourceMode">Source</label>
+          <select id="sourceMode">
+            <option value="auto">Auto</option>
+            <option value="live">Live only</option>
+            <option value="storage">Storage only</option>
+          </select>
+          <button id="refreshBtn" class="primary">Refresh</button>
+        </div>
+      </div>
+      <div class="kpis">
+        <article class="kpi"><div class="label">Students Online</div><div id="kOnline" class="value">0</div></article>
+        <article class="kpi"><div class="label">Live Frames</div><div id="kFrames" class="value">0</div></article>
+        <article class="kpi"><div class="label">Total Violations</div><div id="kViolations" class="value">0</div></article>
+        <article class="kpi"><div class="label">Alerts Last 10m</div><div id="kActive" class="value">0</div></article>
+      </div>
+    </section>
+
+    <section class="two-col">
+      <article class="glass panel">
+        <h2>Students Feed</h2>
+        <div id="studentsGrid" class="students"></div>
+      </article>
+      <article class="glass panel">
+        <h2>Selected Student Insights</h2>
+        <div id="studentInsight" class="hint">Select a student card to load insights.</div>
+      </article>
+    </section>
+
+    <section class="two-col">
+      <article class="glass panel">
+        <h2>Violation Feed</h2>
+        <div id="violationsList" class="vlist"></div>
+      </article>
+      <article class="glass panel">
+        <h2>Risk Leaderboard</h2>
+        <div id="leaderboard" class="leader"></div>
+      </article>
+    </section>
+
+    <section class="glass panel">
+      <h2>Timeline</h2>
+      <div id="timeline" class="timeline"></div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      sourceMode: "auto",
+      ws: null,
+      wsConnected: false,
+      selectedStudentId: null,
+      students: new Map(),
+      violations: [],
+    };
+
+    function studentDisplayName(id) {
+      return id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    function wsBase() {
+      const proto = location.protocol === "https:" ? "wss:" : "ws:";
+      return proto + "//" + location.host;
+    }
+
+    function toDateText(ts) {
+      if (!ts) return "-";
+      const d = new Date(ts);
+      if (Number.isNaN(d.getTime())) return ts;
+      return d.toLocaleString();
+    }
+
+    function setWsStatus(isOn) {
+      state.wsConnected = isOn;
+      const el = document.getElementById("wsStatus");
+      el.className = "pill " + (isOn ? "on" : "off");
+      el.textContent = isOn ? "WS CONNECTED" : "WS DISCONNECTED";
+    }
+
+    function ensureStudent(studentId) {
+      if (!state.students.has(studentId)) {
+        state.students.set(studentId, {
+          id: studentId,
+          name: studentDisplayName(studentId),
+          liveImage: null,
+          screenshots: [],
+          currentScreen: 0,
+          lastUpdateAt: null,
+        });
+      }
+      return state.students.get(studentId);
+    }
+
+    async function loadStorage() {
+      try {
+        const res = await fetch("/api/screenshots/list");
+        const data = await res.json();
+        const students = data.students || {};
+        Object.entries(students).forEach(([studentId, shots]) => {
+          const s = ensureStudent(studentId);
+          s.screenshots = shots;
+          if (s.currentScreen >= s.screenshots.length) {
+            s.currentScreen = Math.max(s.screenshots.length - 1, 0);
+          }
+        });
+      } catch (e) {
+        console.error("loadStorage error", e);
+      }
+    }
+
+    async function loadOverview() {
+      try {
+        const res = await fetch("/api/hackathon/overview");
+        const data = await res.json();
+        document.getElementById("kOnline").textContent = data.total_students_online ?? 0;
+        document.getElementById("kFrames").textContent = data.students_with_live_frames ?? 0;
+        document.getElementById("kViolations").textContent = data.total_violations ?? 0;
+        document.getElementById("kActive").textContent = data.active_alerts_last_10m ?? 0;
+      } catch (e) {
+        console.error("loadOverview error", e);
+      }
+    }
+
+    async function loadLeaderboard() {
+      try {
+        const res = await fetch("/api/hackathon/leaderboard?limit=20");
+        const data = await res.json();
+        const rows = data.leaderboard || [];
+        const root = document.getElementById("leaderboard");
+        if (!rows.length) {
+          root.innerHTML = '<div class="hint">No leaderboard data yet.</div>';
+          return;
+        }
+        root.innerHTML = rows.map((r, i) => `
+          <div class="leader-item">
+            <div>#${i + 1} ${r.student_id} (${r.incidents})</div>
+            <div><span class="risk ${r.risk_level || "low"}">${r.risk_level || "low"}</span> ${r.risk_score}</div>
+          </div>
+        `).join("");
+      } catch (e) {
+        console.error("loadLeaderboard error", e);
+      }
+    }
+
+    async function loadTimeline() {
+      try {
+        const res = await fetch("/api/hackathon/timeline?minutes=120");
+        const data = await res.json();
+        const points = data.points || [];
+        const peak = data.peak_minute;
+        const root = document.getElementById("timeline");
+        if (!points.length) {
+          root.innerHTML = '<div class="hint">No timeline data in selected window.</div>';
+          return;
+        }
+        const maxCount = Math.max(...points.map((p) => p.incidents), 1);
+        root.innerHTML = (peak ? `<div><b>Peak:</b> ${peak.minute} (${peak.incidents})</div><hr/>` : "") +
+          points.slice(-80).map((p) => {
+            const width = Math.max(4, Math.round((p.incidents / maxCount) * 100));
+            return `
+              <div style="margin-bottom:7px;">
+                <div style="display:flex;justify-content:space-between;gap:8px;">
+                  <span>${p.minute}</span>
+                  <b>${p.incidents}</b>
+                </div>
+                <div class="bar"><i style="width:${width}%"></i></div>
+              </div>
+            `;
+          }).join("");
+      } catch (e) {
+        console.error("loadTimeline error", e);
+      }
+    }
+
+    async function loadViolations() {
+      try {
+        const res = await fetch("/violations");
+        const data = await res.json();
+        state.violations = (data.violations || []).slice().reverse();
+        renderViolations();
+      } catch (e) {
+        console.error("loadViolations error", e);
+      }
+    }
+
+    function renderViolations() {
+      const root = document.getElementById("violationsList");
+      if (!state.violations.length) {
+        root.innerHTML = '<div class="hint">No violations yet.</div>';
+        return;
+      }
+      root.innerHTML = state.violations.slice(0, 200).map((v) => `
+        <div class="vitem ${v.violation_type || ""}">
+          <div><b>${v.student_id || "unknown"}</b> - ${(v.violation_type || "unknown").toUpperCase()}</div>
+          <div class="meta">${v.violation_data || "-"}</div>
+          <div class="meta">${toDateText(v.timestamp)}</div>
+        </div>
+      `).join("");
+    }
+
+    function getVisibleStudents() {
+      const all = Array.from(state.students.values());
+      if (state.sourceMode === "live") return all.filter((s) => !!s.liveImage);
+      if (state.sourceMode === "storage") return all.filter((s) => s.screenshots.length > 0);
+      return all;
+    }
+
+    function renderStudents() {
+      const root = document.getElementById("studentsGrid");
+      const list = getVisibleStudents();
+      if (!list.length) {
+        root.innerHTML = '<div class="hint">No students found yet.</div>';
+        return;
+      }
+      root.innerHTML = list.map((s) => {
+        const isLive = !!s.liveImage;
+        const selected = s.id === state.selectedStudentId ? "sel" : "";
+        let media = '<div class="meta">No image</div>';
+        if (isLive) {
+          media = `<img src="data:image/jpeg;base64,${s.liveImage}" alt="${s.id}"/>`;
+        } else if (s.screenshots.length) {
+          const currentFile = s.screenshots[s.currentScreen];
+          media = `<img src="/storage/screenshots/${s.id}/${currentFile}" alt="${s.id}"/>`;
+        }
+        const controls = s.screenshots.length > 1 ? `
+          <div class="controls-inline">
+            <button data-act="prev" data-id="${s.id}">Prev</button>
+            <button data-act="next" data-id="${s.id}">Next</button>
+            <span class="meta">${s.currentScreen + 1}/${s.screenshots.length}</span>
+          </div>` : "";
+        return `
+          <article class="student ${selected}" data-act="select" data-id="${s.id}">
+            <div class="frame">${media}</div>
+            <div><b>${s.name}</b></div>
+            <div class="meta">ID: ${s.id}</div>
+            <div class="badge ${isLive ? "live" : "storage"}">${isLive ? "Live" : "Storage"}</div>
+            <div class="meta">Stored: ${s.screenshots.length} | Updated: ${s.lastUpdateAt ? toDateText(s.lastUpdateAt) : "-"}</div>
+            ${controls}
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function loadStudentInsights(studentId) {
+      const root = document.getElementById("studentInsight");
+      root.textContent = "Loading insights...";
+      try {
+        const res = await fetch(`/api/hackathon/student/${encodeURIComponent(studentId)}/insights`);
+        const data = await res.json();
+        root.innerHTML = `
+          <div class="stack">
+            <div><b>Student:</b> ${data.student_id}</div>
+            <div><b>Incidents:</b> ${data.incidents ?? 0}</div>
+            <div><b>Dominant Violation:</b> ${data.dominant_violation_type || "-"}</div>
+            <div><b>Insight:</b> ${data.insight || "-"}</div>
+            <div><b>Recommendation:</b> ${data.recommendation || "-"}</div>
+            <div class="meta"><b>Risk JSON:</b> ${data.risk ? JSON.stringify(data.risk) : "-"}</div>
+          </div>
+        `;
+      } catch (e) {
+        root.textContent = "Failed to load insights.";
+      }
+    }
+
+    function initWs() {
+      try {
+        state.ws = new WebSocket(wsBase() + "/ws/teacher");
+        state.ws.onopen = () => setWsStatus(true);
+        state.ws.onclose = () => {
+          setWsStatus(false);
+          setTimeout(initWs, 2000);
+        };
+        state.ws.onerror = () => setWsStatus(false);
+        state.ws.onmessage = (event) => {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "screen") {
+            const s = ensureStudent(msg.student_id);
+            s.liveImage = msg.image || null;
+            s.lastUpdateAt = new Date().toISOString();
+            renderStudents();
+          } else if (msg.type === "violation_alert") {
+            state.violations.unshift(msg);
+            renderViolations();
+            loadOverview();
+            loadLeaderboard();
+            loadTimeline();
+            if (state.selectedStudentId === msg.student_id) {
+              loadStudentInsights(msg.student_id);
+            }
+          }
+        };
+      } catch (e) {
+        setWsStatus(false);
+      }
+    }
+
+    function bindEvents() {
+      document.getElementById("sourceMode").addEventListener("change", (e) => {
+        state.sourceMode = e.target.value;
+        renderStudents();
+      });
+
+      document.getElementById("refreshBtn").addEventListener("click", refreshAll);
+
+      document.getElementById("studentsGrid").addEventListener("click", (e) => {
+        const target = e.target.closest("[data-act]");
+        if (!target) return;
+        const act = target.getAttribute("data-act");
+        const id = target.getAttribute("data-id");
+        if (!id) return;
+        const s = state.students.get(id);
+        if (!s) return;
+        if (act === "prev") {
+          s.currentScreen = Math.max(0, s.currentScreen - 1);
+          renderStudents();
+          return;
+        }
+        if (act === "next") {
+          s.currentScreen = Math.min(Math.max(0, s.screenshots.length - 1), s.currentScreen + 1);
+          renderStudents();
+          return;
+        }
+        if (act === "select") {
+          state.selectedStudentId = id;
+          renderStudents();
+          loadStudentInsights(id);
+        }
+      });
+    }
+
+    async function refreshAll() {
+      await Promise.all([
+        loadStorage(),
+        loadOverview(),
+        loadViolations(),
+        loadLeaderboard(),
+        loadTimeline(),
+      ]);
+      renderStudents();
+      if (state.selectedStudentId) {
+        loadStudentInsights(state.selectedStudentId);
+      }
+    }
+
+    async function boot() {
+      bindEvents();
+      initWs();
+      await refreshAll();
+      setInterval(loadOverview, 7000);
+      setInterval(loadStorage, 9000);
+      setInterval(loadLeaderboard, 12000);
+      setInterval(loadTimeline, 14000);
+      setInterval(renderStudents, 1600);
+    }
+
+    boot();
+  </script>
+</body>
+</html>
